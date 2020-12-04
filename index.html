@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>This is game 3 cards</title>
+    <style>
+        img.one {
+            height: 10%;
+            width: 10%;
+        }
+
+        img.two {
+            height: 10%;
+            width: 10%;
+        }
+
+        img.three {
+            height: 10%;
+            width: 10%;
+        }
+
+        body {
+            background-image: url('images/background.jpg');
+            background-size: cover;
+        }
+    </style>
+
+    <script src="js/data.js"></script>
+    <script src="js/play3card.js"></script>
+
+</head>
+<body>
+
+<div>
+    <p style="color:red;">Nhập tên người chơi:</p> <label for="playerName"> </label><input type="text" id="playerName" oninput="setName()" onchange="setName()">
+    <button onclick="resetMoney(500)">Reset tiền chơi</button>
+    <button onclick="reset3cay()">Reset lá bài</button>
+    <p style="color:red;">Đặt cược</p>
+    <select id="bet" oninput="setBet()" onchange="setBet()">
+        <option value="10">10k</option>
+        <option value="20">20k</option>
+        <option value="100" selected>100k</option>
+        <option value="200">200k</option>
+        <option value="500">500k</option>
+    </select>
+    <p style="color:red;" id="VonDau"></p>
+
+    <img class="one" src="images/down-card.png" id="1" alt="">
+    <img class="two" src="images/down-card.png" id="2" alt="">
+    <img class="three" src="images/down-card.png" id="3" alt="">
+    <button onclick="Open3Card()"><h4>Mở bài.</h4></button>
+    <h3 style="color:red;" id="playerOutPut"></h3>
+
+    <img class="one" src="images/down-card.png" id="4" alt="">
+    <img class="two" src="images/down-card.png" id="5" alt="">
+    <img class="three" src="images/down-card.png" id="6" alt="">
+    <button onclick="Master()"><h4>Chủ cái mở bài.</h4></button>
+    <h3 style="color:#ffff66;" id="chuCaiOutPut"></h3>
+
+</div>
+
+<div>
+    <p style="color:#ccffcc;" id="res"></p>
+    <p style="color:#ccffcc;" id="bet_res"></p>
+</div>
+
+<script>
+    function Open3Card() {
+        if (+loadOldData('money') < +loadOldData('bet')) {
+            alert("Bạn không đủ tiền đặt cược, không thể chơi tiếp.");
+            return;
+        }
+
+        if (+loadOldData('money') <= 0) {
+            alert("Bạn hết tiền rồi, không thể chơi tiếp.");
+            return;
+        }
+        if (!loadOldData('diemchucai') && loadOldData('diemplayer')) {
+            alert("Đến lượt chủ cái mở bài.");
+            return;
+        }
+
+        reset3cay();
+        player = new PLay3Card(loadOldData('playerName'), loadOldData('bet'), loadOldData('money'));
+        diemPlayer = player.get3Card();
+        saveOldData("diemplayer", diemPlayer);
+        document.getElementById("VonDau").innerHTML = "Vốn ban đầu của " + player.name + " là: " + player.money + "k";
+        sleep(1000).then(() => {
+            document.getElementById("playerOutPut").innerHTML = "Điểm của " + player.name + " là: " + diemPlayer + " (" + player.list + ")";
+        });
+    }
+
+    function sleep(time) {
+        return new Promise((resolve) => setTimeout(resolve, time));
+    }
+
+    function setBet() {
+        if (loadOldData('diemplayer')) {
+            document.getElementById("bet").value = loadOldData("bet");
+            alert("Bạn đã mở bài, không thể thay đổi tiền cược.");
+            return;
+        }
+        saveOldData("bet", document.getElementById("bet").value);
+    }
+
+    function setName() {
+        saveOldData("playerName", document.getElementById("playerName").value);
+    }
+
+    function Master() {
+
+        if (!diemPlayer) {
+            alert("Người chơi cần mở bài trước.");
+            return;
+        }
+        if (!loadOldData('diemchucai') && !loadOldData('diemplayer')) {
+            alert("Người chơi cần mở bài trước.");
+            return;
+        }
+        if (+loadOldData('money') <= 0) {
+            alert("Bạn hết tiền rồi!!!.");
+            return;
+        }
+
+        let MasterPlay = new PLay3Card("Chủ cái");
+        let diemMaster = MasterPlay.get3Card(player.listSelect ? player.listSelect : listSelect);
+        saveOldData("diemchucai", diemMaster);
+        sleep(6000).then(() => {
+            document.getElementById("chuCaiOutPut").innerHTML = "Điểm của " + MasterPlay.name + " là: " + diemMaster + " (" + MasterPlay.list + ")";
+        });
+
+        removeLocal("diemplayer");
+        removeLocal("diemchucai");
+        removeLocal("diemplayer_card");
+        removeLocal("diemlist_card");
+
+        if (diemMaster > diemPlayer) {
+            sleep(6000).then(() => {
+                document.getElementById("res").innerHTML = MasterPlay.name + " thắng rồi !!!";
+                document.getElementById("bet_res").innerHTML = "Bạn đặt cược " + player.bet + "k. Tiền của bạn là: " + player.lostMoney() + "k";
+            });
+        }
+        if (diemMaster < diemPlayer) {
+            sleep(6000).then(() => {
+                document.getElementById("res").innerHTML = player.name + " thắng rồi !!!";
+                document.getElementById("bet_res").innerHTML = "Bạn đặt cược " + player.bet + "k. Tiền của bạn là: " + player.winMoney() + "k";
+            });
+        }
+        if (diemMaster === diemPlayer) {
+            sleep(6000).then(() => {
+                document.getElementById("res").innerHTML = "Hoà rồi";
+                document.getElementById("bet_res").innerHTML = "Bạn không mất thêm gi cả.";
+            });
+        }
+    }
+
+    function reset3cay() {
+        document.getElementById("VonDau").innerHTML = "Vốn ban đầu của " + loadOldData("playerName") + " là: " + loadOldData('money') + "k";
+        document.getElementById('1').src = "images/down-card.png";
+        document.getElementById('2').src = "images/down-card.png";
+        document.getElementById('3').src = "images/down-card.png";
+        document.getElementById('4').src = "images/down-card.png";
+        document.getElementById('5').src = "images/down-card.png";
+        document.getElementById('6').src = "images/down-card.png";
+        document.getElementById("res").innerHTML = "";
+        document.getElementById("bet_res").innerHTML = "";
+        document.getElementById("chuCaiOutPut").innerHTML = "";
+        document.getElementById("playerOutPut").innerHTML = "";
+    }
+
+</script>
+</body>
+</html>
